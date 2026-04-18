@@ -71,3 +71,28 @@ unclassified:
   slackNotifier:
     teamDomain: "anhcnt-devops-lab"
     tokenCredentialId: "slack-token"
+
+jobs:
+  - script: |
+      multibranchPipelineJob('Spring-Petclinic-AutoCreated') {
+          displayName('Spring Petclinic (Auto Provisioned)')
+          description('Job nay duoc tao tu dong boi JCasC Seed Job.')
+          branchSources {
+              git {
+                  id('petclinic-repo')
+                  remote('https://github.com/tac101a/spring-petclinic.git')
+                  credentialsId('github-token-credentials')
+                  includes('*')
+              }
+          }
+          factory {
+              workflowBranchProjectFactory {
+                  scriptPath('Jenkinsfile')
+              }
+          }
+          orphanedItemStrategy {
+              discardOldItems {
+                  numToKeep(5)
+              }
+          }
+      }
