@@ -1,0 +1,73 @@
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - string:
+              id: "sonar-token"
+              description: "Token de ket noi SonarQube"
+              secret: "${SONAR_TOKEN}"
+          - usernamePassword:
+              id: "nexus-credentials"
+              description: "Tai khoan day file len Nexus"
+              username: "admin"
+              password: "${NEXUS_PASSWORD}"
+          - basicSSHUserPrivateKey:
+              id: "vm2-ssh-key"
+              description: "Chia khoa SSH vao VM2 Agent"
+              privateKeySource:
+                directEntry:
+                  privateKey: "${VM2_SSH_PRIVATE_KEY}"
+          - usernamePassword:
+              id: "github-token-credentials"
+              description: "Github Personal Access Token for Auto Tagging"
+              username: "tac101a"
+              password: "${GITHUB_TOKEN}"
+          - string:
+              id: "slack-webhook-url"
+              description: "Slack Webhook for Jenkins Alerts"
+              secret: "${SLACK_WEBHOOK_URL}"
+          - string:
+              id: "slack-token"
+              description: "Token for anhcnt-devops-lab"
+              secret: "${SLACK_TOKEN}"
+
+jenkins:
+  systemMessage: "Jenkins Server - Managed by JCasC (Architecture by AnhCNT)"
+  numExecutors: 2
+  nodes:
+    - permanent:
+        name: "agent-vm2"
+        labelString: "docker-node"
+        mode: EXCLUSIVE
+        numExecutors: 2
+        remoteFS: "/home/azureuser/jenkins-workspace"
+        launcher:
+          ssh:
+            credentialsId: "vm2-ssh-key"
+            host: "10.0.0.5"
+            port: 22
+            sshHostKeyVerificationStrategy: "nonVerifyingKeyVerificationStrategy"
+
+unclassified:
+  globalLibraries:
+    libraries:
+      - name: "my-shared-lib"
+        defaultVersion: "main"
+        retriever:
+          modernSCM:
+            scm:
+              gitSource:
+                remote: "https://github.com/tac101a/jenkins-shared-library"
+                credentialsId: "github-token-credentials"
+                traits:
+                  - "gitBranchDiscovery"
+        cachingConfiguration:
+          refreshTimeMinutes: 0
+  sonarGlobalConfiguration:
+    installations:
+      - name: "sonar-server"
+        serverUrl: "http://sonar.abc"
+        credentialsId: "sonar-token"
+  slackNotifier:
+    teamDomain: "anhcnt-devops-lab"
+    tokenCredentialId: "slack-token"

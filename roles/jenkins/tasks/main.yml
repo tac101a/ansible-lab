@@ -28,6 +28,21 @@
     state: started
     enabled: true
 
+- name: Đẩy cấu hình JCasC (jenkins.yaml) vào máy chủ
+  ansible.builtin.copy:
+    src: jenkins.yaml
+    dest: /var/lib/jenkins/jenkins.yaml
+    owner: jenkins
+    group: jenkins
+    mode: '0644'
+
+- name: Bơm biến môi trường JCasC vào Systemd của Jenkins
+  ansible.builtin.lineinfile:
+    path: /usr/lib/systemd/system/jenkins.service
+    insertafter: '^Environment="JAVA_OPTS'
+    line: 'Environment="CASC_JENKINS_CONFIG=/var/lib/jenkins/jenkins.yaml"'
+  notify: Restart Jenkins
+
 - name: Cho doi Jenkins khoi dong hoan toan (Cho den khi mo port 8080)
   ansible.builtin.wait_for:
     port: 8080
@@ -38,7 +53,7 @@
   ansible.builtin.uri:
     url: "http://localhost:8080/job/00-SEED-JOB-FACTORY/build"
     method: POST
-    user: "admin" # Tên đăng nhập Jenkins của bạn
+    user: "admin" # Tên đăng nhập Jenkins
     password: "{{ jenkins_api_token }}"
     force_basic_auth: yes
     status_code: 201 # HTTP 201 là mã thành công của lệnh kích hoạt build
