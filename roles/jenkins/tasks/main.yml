@@ -29,7 +29,7 @@
     enabled: true
 
 - name: Đẩy cấu hình JCasC (jenkins.yaml) vào máy chủ
-  ansible.builtin.copy:
+  ansible.builtin.template:
     src: jenkins.yaml
     dest: /var/lib/jenkins/jenkins.yaml
     owner: jenkins

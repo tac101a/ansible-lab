@@ -5,18 +5,18 @@ credentials:
           - string:
               id: "sonar-token"
               description: "Token de ket noi SonarQube"
-              secret: "${SONAR_TOKEN}"
+              secret: "{{ sonar_token }}"
           - usernamePassword:
               id: "nexus-credentials"
               description: "Tai khoan day file len Nexus"
               username: "admin"
-              password: "${NEXUS_PASSWORD}"
+              password: "{{ nexus_password }}"
           - basicSSHUserPrivateKey:
               id: "vm2-ssh-key"
               description: "Chia khoa SSH vao VM2 Agent"
               privateKeySource:
                 directEntry:
-                  privateKey: "${VM2_SSH_PRIVATE_KEY}"
+                  privateKey: "{{ vm2_ssh_private_key }}"
           - usernamePassword:
               id: "github-token-credentials"
               description: "Github Personal Access Token for Auto Tagging"
