@@ -21,15 +21,15 @@ credentials:
               id: "github-token-credentials"
               description: "Github Personal Access Token for Auto Tagging"
               username: "tac101a"
-              password: "${GITHUB_TOKEN}"
+              password: "{{ github_token }}"
           - string:
               id: "slack-webhook-url"
               description: "Slack Webhook for Jenkins Alerts"
-              secret: "${SLACK_WEBHOOK_URL}"
+              secret: "{{ slack_webhook_url }}"
           - string:
               id: "slack-token"
               description: "Token for anhcnt-devops-lab"
-              secret: "${SLACK_TOKEN}"
+              secret: "{{ slack_token }}"
 
 jenkins:
   systemMessage: "Jenkins Server - Managed by JCasC (Architecture by AnhCNT)"
