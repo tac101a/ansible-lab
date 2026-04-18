@@ -28,13 +28,35 @@
     state: started
     enabled: true
 
-- name: Đẩy cấu hình JCasC (jenkins.yaml) vào máy chủ
+- name: Tải công cụ Jenkins Plugin Manager (CLI)
+  ansible.builtin.get_url:
+    url: https://github.com/jenkinsci/plugin-installation-manager-tool/releases/download/2.12.15/jenkins-plugin-manager-2.12.15.jar
+    dest: /opt/jenkins-plugin-manager.jar
+    mode: "0755"
+
+- name: Tự động cài đặt các Plugin cốt lõi cho CI/CD
+  ansible.builtin.command:
+    cmd: >
+      java -jar /opt/jenkins-plugin-manager.jar
+      --war /usr/share/java/jenkins.war
+      --plugin-download-directory /var/lib/jenkins/plugins
+      --plugins configuration-as-code job-dsl workflow-aggregator git sonar slack ssh-slaves
+  become_user: jenkins
+
+- name: Đẩy cấu hình JCasC (jenkins.yaml.j2) vào máy chủ
   ansible.builtin.template:
-    src: jenkins.yaml
+    src: jenkins.yaml.j2
     dest: /var/lib/jenkins/jenkins.yaml
     owner: jenkins
     group: jenkins
     mode: '0644'
+
+- name: Tắt màn hình Setup Wizard mặc định của Jenkins
+  ansible.builtin.lineinfile:
+    path: /usr/lib/systemd/system/jenkins.service
+    regexp: '^Environment="JAVA_OPTS'
+    line: 'Environment="JAVA_OPTS=-Djava.awt.headless=true -Djenkins.install.runSetupWizard=false"'
+  notify: Restart Jenkins
 
 - name: Bơm biến môi trường JCasC vào Systemd của Jenkins
   ansible.builtin.lineinfile:
@@ -43,7 +65,7 @@
     line: 'Environment="CASC_JENKINS_CONFIG=/var/lib/jenkins/jenkins.yaml"'
   notify: Restart Jenkins
 
-- name: Cho doi Jenkins khoi dong hoan toan (Cho den khi mo port 8080)
+- name: Chờ đợi Jenkins khởi động hoàn toàn (Cho đến khi mở port 8080)
   ansible.builtin.wait_for:
     port: 8080
     delay: 10
