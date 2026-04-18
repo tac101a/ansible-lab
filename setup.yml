@@ -1,0 +1,35 @@
+---
+- name: Cài đặt môi trường nền tảng (Java)
+  hosts: all
+  become: true
+  tasks:
+    - name: Ping kiem tra ket noi
+      ansible.builtin.ping:
+
+  roles:
+    - java
+
+- name: Cài đặt CI/CD Core (Jenkins, Nexus, SonarQube)
+  hosts: control_node
+  become: true
+  vars_files:
+    - secrets.yml
+  roles:
+    - jenkins
+    - nexus
+    - sonarqube
+    - gcloud
+
+- name: Cấu hình Local DNS & Reverse Proxy
+  hosts: control_node
+  become: true
+  roles:
+    - bind9
+    - nginx
+
+- name: Cài đặt Docker cho App Server (VM2)
+  hosts: target_nodes
+  become: true
+  roles:
+    - common_tools
+    - docker

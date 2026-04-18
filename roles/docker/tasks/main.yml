@@ -1,0 +1,45 @@
+---
+- name: Gỡ bỏ các phiên bản Docker cũ (nếu có)
+  ansible.builtin.dnf:
+    name:
+      - docker
+      - docker-client
+      - docker-client-latest
+      - docker-common
+      - docker-latest
+      - docker-latest-logrotate
+      - docker-logrotate
+      - docker-engine
+    state: absent
+
+- name: Cài đặt yum-utils (Công cụ quản lý Repo)
+  ansible.builtin.dnf:
+    name: yum-utils
+    state: present
+
+- name: Thêm Docker Repository chính thức
+  ansible.builtin.get_url:
+    url: "{{ docker_repo_url }}"
+    dest: /etc/yum.repos.d/docker-ce.repo
+    mode: '0644'
+
+- name: Cài đặt các gói Docker CE
+  ansible.builtin.dnf:
+    name: "{{ docker_packages_redhat }}"
+    state: present
+    update_cache: yes
+
+- name: Khởi động và cho phép Docker chạy lúc Boot
+  ansible.builtin.systemd:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Thêm user azureuser vào group docker (Để chạy không cần sudo)
+  ansible.builtin.user:
+    name: azureuser
+    groups: docker
+    append: yes
+
+- name: Reset kết nối SSH để cập nhật quyền Group
+  ansible.builtin.meta: reset_connection

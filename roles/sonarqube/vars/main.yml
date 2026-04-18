@@ -1,0 +1,4 @@
+---
+sonarqube_version: "10.4.1.88267"
+sonarqube_dir: "/opt/sonarqube"
+sonarqube_port: 9000

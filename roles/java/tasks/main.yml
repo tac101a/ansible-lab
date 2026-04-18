@@ -1,0 +1,7 @@
+---
+# tasks file for java
+- name: Install Java OpenJDK (RedHat family)
+  ansible.builtin.dnf:
+    name: "{{ java_package_name }}"
+    state: present
+  become: true

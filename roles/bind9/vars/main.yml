@@ -1,0 +1,8 @@
+---
+dns_domain: "abc"
+dns_server_ip: "10.0.0.4"
+dns_records:
+  - { name: "jenkins", ip: "10.0.0.4" }
+  - { name: "nexus", ip: "10.0.0.4" }
+  - { name: "sonar", ip: "10.0.0.4" }
+  - { name: "docker", ip: "10.0.0.4" }

@@ -1,0 +1,89 @@
+---
+- name: Cài đặt công cụ giải nén (tar, wget)
+  ansible.builtin.dnf:
+    name: 
+      - tar
+      - wget
+    state: present
+
+- name: Tạo user riêng để chạy dịch vụ Nexus (Bảo mật)
+  ansible.builtin.user:
+    name: nexus
+    state: present
+    create_home: no
+
+- name: Tải và giải nén mã nguồn Nexus thẳng vào /opt
+  ansible.builtin.unarchive:
+    src: "https://download.sonatype.com/nexus/3/nexus-{{ nexus_version }}-unix.tar.gz"
+    dest: "/opt"
+    remote_src: yes
+    creates: "/opt/sonatype-work" # Giúp lệnh này Idempotent (chỉ tải 1 lần)
+
+- name: Đổi tên thư mục phiên bản thành thư mục chuẩn (/opt/nexus)
+  ansible.builtin.command: mv /opt/nexus-{{ nexus_version }} {{ nexus_dir }}
+  args:
+    creates: "{{ nexus_dir }}" # Nếu có /opt/nexus rồi thì bỏ qua bước này
+
+- name: Cấp quyền sở hữu thư mục cho user nexus
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: nexus
+    group: nexus
+    recurse: yes
+  loop:
+    - "{{ nexus_dir }}"
+    - "/opt/sonatype-work"
+
+- name: Cấu hình Port cho Nexus
+  ansible.builtin.lineinfile:
+    path: "{{ nexus_dir }}/etc/nexus-default.properties"
+    regexp: '^application-port='
+    line: "application-port={{ nexus_port }}"
+
+- name: Tạo file khởi động Systemd cho Nexus
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/nexus.service
+    content: |
+      [Unit]
+      Description=Nexus Service
+      After=network.target
+
+      [Service]
+      Type=forking
+      LimitNOFILE=65536
+      User=nexus
+      Group=nexus
+      ExecStart={{ nexus_dir }}/bin/nexus start
+      ExecStop={{ nexus_dir }}/bin/nexus stop
+      Restart=on-abort
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Mở port trên Tường lửa (Firewalld)
+  ansible.posix.firewalld:
+    port: "{{ nexus_port }}/tcp"
+    state: enabled
+    permanent: true
+    immediate: true
+
+- name: Khởi động và cho phép Nexus chạy ngầm lúc Boot
+  ansible.builtin.systemd:
+    name: nexus
+    daemon_reload: yes
+    state: started
+    enabled: true
+
+- name: Mo khoa gioi han File Descriptors cho Nexus
+  ansible.builtin.copy:
+    dest: /etc/security/limits.d/99-nexus.conf
+    content: |
+      * soft nofile 65536
+      * hard nofile 65536
+    mode: '0644'
+
+- name: Restart Nexus de nhan han muc moi
+  ansible.builtin.systemd:
+    name: nexus
+    state: restarted

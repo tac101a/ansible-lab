@@ -1,0 +1,76 @@
+---
+- name: Cài đặt công cụ giải nén
+  ansible.builtin.dnf:
+    name: unzip
+    state: present
+
+- name: Tối ưu hoá Kernel cho SonarQube (Yêu cầu của Elasticsearch)
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    sysctl_set: yes
+  loop:
+    - { key: 'vm.max_map_count', value: '262144' }
+    - { key: 'fs.file-max', value: '131072' }
+
+- name: Tạo user riêng để chạy dịch vụ SonarQube
+  ansible.builtin.user:
+    name: sonar
+    state: present
+    create_home: no
+
+- name: Tải và giải nén SonarQube
+  ansible.builtin.unarchive:
+    src: "https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-{{ sonarqube_version }}.zip"
+    dest: "/opt"
+    remote_src: yes
+    creates: "/opt/sonarqube-{{ sonarqube_version }}/bin"
+
+- name: Đổi tên thư mục phiên bản thành thư mục chuẩn
+  ansible.builtin.command: mv /opt/sonarqube-{{ sonarqube_version }} {{ sonarqube_dir }}
+  args:
+    creates: "{{ sonarqube_dir }}"
+
+- name: Cấp quyền sở hữu thư mục cho user sonar
+  ansible.builtin.file:
+    path: "{{ sonarqube_dir }}"
+    state: directory
+    owner: sonar
+    group: sonar
+    recurse: yes
+
+- name: Tạo file khởi động Systemd cho SonarQube
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/sonarqube.service
+    content: |
+      [Unit]
+      Description=SonarQube service
+      After=syslog.target network.target
+
+      [Service]
+      Type=forking
+      ExecStart={{ sonarqube_dir }}/bin/linux-x86-64/sonar.sh start
+      ExecStop={{ sonarqube_dir }}/bin/linux-x86-64/sonar.sh stop
+      User=sonar
+      Group=sonar
+      Restart=always
+      LimitNOFILE=65536
+      LimitNPROC=4096
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Mở port trên Tường lửa (Firewalld)
+  ansible.posix.firewalld:
+    port: "{{ sonarqube_port }}/tcp"
+    state: enabled
+    permanent: true
+    immediate: true
+
+- name: Khởi động và cho phép SonarQube chạy ngầm lúc Boot
+  ansible.builtin.systemd:
+    name: sonarqube
+    daemon_reload: yes
+    state: started
+    enabled: true

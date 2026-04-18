@@ -1,0 +1,12 @@
+---
+# Danh sách gói cho họ RedHat (AlmaLinux/CentOS)
+docker_packages_redhat:
+  - yum-utils
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+# Repo URL
+docker_repo_url: "https://download.docker.com/linux/centos/docker-ce.repo"

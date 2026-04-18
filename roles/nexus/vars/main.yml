@@ -1,0 +1,4 @@
+---
+nexus_version: "3.73.0-12"
+nexus_dir: "/opt/nexus"
+nexus_port: 8081

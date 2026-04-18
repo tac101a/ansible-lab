@@ -1,0 +1,44 @@
+---
+# tasks file for jenkins
+- name: Tải file cấu hình Repository của Jenkins
+  ansible.builtin.get_url:
+    url: https://pkg.jenkins.io/redhat-stable/jenkins.repo
+    dest: /etc/yum.repos.d/jenkins.repo
+
+- name: Import GPG Key để xác thực ứng dụng
+  ansible.builtin.rpm_key:
+    state: present
+    key: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+
+- name: Cài đặt gói Jenkins
+  ansible.builtin.dnf:
+    name: jenkins
+    state: present
+
+- name: Mở port trên Tường lửa (Firewalld)
+  ansible.posix.firewalld:
+    port: "{{ jenkins_port }}/tcp"
+    state: enabled
+    permanent: true
+    immediate: true
+
+- name: Khởi động và cho phép Jenkins chạy ngầm lúc Boot
+  ansible.builtin.systemd:
+    name: jenkins
+    state: started
+    enabled: true
+
+- name: Cho doi Jenkins khoi dong hoan toan (Cho den khi mo port 8080)
+  ansible.builtin.wait_for:
+    port: 8080
+    delay: 10
+    timeout: 300
+
+- name: Kich hoat Seed Job tren Jenkins qua REST API
+  ansible.builtin.uri:
+    url: "http://localhost:8080/job/00-SEED-JOB-FACTORY/build"
+    method: POST
+    user: "admin" # Tên đăng nhập Jenkins của bạn
+    password: "{{ jenkins_api_token }}"
+    force_basic_auth: yes
+    status_code: 201 # HTTP 201 là mã thành công của lệnh kích hoạt build

@@ -1,0 +1,47 @@
+---
+- name: Cài đặt gói Bind9 (named)
+  ansible.builtin.dnf:
+    name: bind, bind-utils
+    state: present
+
+- name: Cấu hình named.conf để lắng nghe IP nội bộ
+  ansible.builtin.lineinfile:
+    path: /etc/named.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  loop:
+    - { regexp: 'listen-on port 53', line: '        listen-on port 53 { 127.0.0.1; any; };' }
+    - { regexp: 'allow-query', line: '        allow-query     { localhost; any; };' }
+
+- name: Thêm Zone abc vào named.conf
+  ansible.builtin.blockinfile:
+    path: /etc/named.conf
+    insertafter: 'include "/etc/named.rfc1912.zones";'
+    block: |
+      zone "{{ dns_domain }}" IN {
+          type master;
+          file "/var/named/db.{{ dns_domain }}";
+          allow-update { none; };
+      };
+
+- name: Tạo file Zone từ Template Jinja2
+  ansible.builtin.template:
+    src: db.abc.j2
+    dest: "/var/named/db.{{ dns_domain }}"
+    owner: named
+    group: named
+    mode: '0640'
+  notify: restart named
+
+- name: Mở port DNS trên Firewalld
+  ansible.posix.firewalld:
+    service: dns
+    state: enabled
+    permanent: true
+    immediate: true
+
+- name: Khởi động dịch vụ DNS
+  ansible.builtin.systemd:
+    name: named
+    state: started
+    enabled: true

@@ -1,0 +1,42 @@
+---
+- name: Cài đặt gói Nginx
+  ansible.builtin.dnf:
+    name: nginx
+    state: present
+
+- name: Đổ Template cấu hình Reverse Proxy vào Nginx
+  ansible.builtin.template:
+    src: devops.conf.j2
+    dest: /etc/nginx/conf.d/devops.conf
+    mode: '0644'
+  notify: restart nginx
+
+- name: Cấu hình SELinux cho phép Nginx kết nối mạng nội bộ
+  ansible.posix.seboolean:
+    name: httpd_can_network_connect
+    state: yes
+    persistent: yes
+
+- name: Mở port 80 (HTTP) trên Firewalld
+  ansible.posix.firewalld:
+    service: http
+    state: enabled
+    permanent: true
+    immediate: true
+
+- name: Khởi động và cho phép Nginx chạy lúc Boot
+  ansible.builtin.systemd:
+    name: nginx
+    state: started
+    enabled: true
+
+- name: Mo rong cong Nginx (Fix loi 413 Request Entity Too Large)
+  ansible.builtin.copy:
+    dest: /etc/nginx/conf.d/upload_size.conf
+    content: "client_max_body_size 500M;\n"
+    mode: '0644'
+
+- name: Reload lai Nginx de ap dung cau hinh
+  ansible.builtin.systemd:
+    name: nginx
+    state: reloaded

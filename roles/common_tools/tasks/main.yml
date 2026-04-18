@@ -1,0 +1,26 @@
+---
+# Nhánh dành cho họ RedHat (AlmaLinux)
+- name: Cai dat cac cong cu nen tang (git, htop) tren RedHat
+  ansible.builtin.dnf:
+    name:
+      - git
+      - htop
+    state: present
+  when: ansible_os_family == "RedHat"
+
+# Nhánh dành cho họ Debian (Ubuntu)
+- name: Cai dat cac cong cu nen tang (git, htop) tren Debian
+  ansible.builtin.apt:
+    name:
+      - git
+      - htop
+    state: present
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
+- name: Khai bao tam ban do Local DNS vao /etc/hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    line: "10.0.0.4 jenkins.abc sonar.abc nexus.abc docker.abc"
+    state: present
+    backup: yes

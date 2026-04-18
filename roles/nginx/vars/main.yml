@@ -1,0 +1,6 @@
+---
+proxy_apps:
+  - { domain: 'jenkins.abc', port: 8080 }
+  - { domain: 'nexus.abc', port: 8081 }
+  - { domain: 'sonar.abc', port: 9000 }
+  - { domain: 'docker.abc', port: 8083 }

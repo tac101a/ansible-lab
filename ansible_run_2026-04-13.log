@@ -1,0 +1,134 @@
+
+PLAY [Cài đặt môi trường nền tảng (Java)] **************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [127.0.0.1]
+ok: [10.0.0.5]
+
+TASK [java : Install Java OpenJDK (RedHat family)] *****************************
+ok: [127.0.0.1]
+ok: [10.0.0.5]
+
+TASK [Ping kiem tra ket noi] ***************************************************
+ok: [127.0.0.1]
+ok: [10.0.0.5]
+
+PLAY [Cài đặt CI/CD Core (Jenkins, Nexus, SonarQube)] **************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [127.0.0.1]
+
+TASK [jenkins : Tải file cấu hình Repository của Jenkins] **********************
+ok: [127.0.0.1]
+
+TASK [jenkins : Import GPG Key để xác thực ứng dụng] ***************************
+ok: [127.0.0.1]
+
+TASK [jenkins : Cài đặt gói Jenkins] *******************************************
+ok: [127.0.0.1]
+
+TASK [jenkins : Mở port trên Tường lửa (Firewalld)] ****************************
+ok: [127.0.0.1]
+
+TASK [jenkins : Khởi động và cho phép Jenkins chạy ngầm lúc Boot] **************
+ok: [127.0.0.1]
+
+TASK [nexus : Cài đặt công cụ giải nén (tar, wget)] ****************************
+ok: [127.0.0.1]
+
+TASK [nexus : Tạo user riêng để chạy dịch vụ Nexus (Bảo mật)] ******************
+ok: [127.0.0.1]
+
+TASK [nexus : Tải và giải nén mã nguồn Nexus thẳng vào /opt] *******************
+skipping: [127.0.0.1]
+
+TASK [nexus : Đổi tên thư mục phiên bản thành thư mục chuẩn (/opt/nexus)] ******
+ok: [127.0.0.1]
+
+TASK [nexus : Cấp quyền sở hữu thư mục cho user nexus] *************************
+ok: [127.0.0.1] => (item=/opt/nexus)
+ok: [127.0.0.1] => (item=/opt/sonatype-work)
+
+TASK [nexus : Cấu hình Port cho Nexus] *****************************************
+ok: [127.0.0.1]
+
+TASK [nexus : Tạo file khởi động Systemd cho Nexus] ****************************
+ok: [127.0.0.1]
+
+TASK [nexus : Mở port trên Tường lửa (Firewalld)] ******************************
+ok: [127.0.0.1]
+
+TASK [nexus : Khởi động và cho phép Nexus chạy ngầm lúc Boot] ******************
+ok: [127.0.0.1]
+
+TASK [sonarqube : Cài đặt công cụ giải nén] ************************************
+ok: [127.0.0.1]
+
+TASK [sonarqube : Tối ưu hoá Kernel cho SonarQube (Yêu cầu của Elasticsearch)] ***
+ok: [127.0.0.1] => (item={'key': 'vm.max_map_count', 'value': '262144'})
+ok: [127.0.0.1] => (item={'key': 'fs.file-max', 'value': '131072'})
+
+TASK [sonarqube : Tạo user riêng để chạy dịch vụ SonarQube] ********************
+ok: [127.0.0.1]
+
+TASK [sonarqube : Tải và giải nén SonarQube] ***********************************
+skipping: [127.0.0.1]
+
+TASK [sonarqube : Đổi tên thư mục phiên bản thành thư mục chuẩn] ***************
+ok: [127.0.0.1]
+
+TASK [sonarqube : Cấp quyền sở hữu thư mục cho user sonar] *********************
+ok: [127.0.0.1]
+
+TASK [sonarqube : Tạo file khởi động Systemd cho SonarQube] ********************
+ok: [127.0.0.1]
+
+TASK [sonarqube : Mở port trên Tường lửa (Firewalld)] **************************
+ok: [127.0.0.1]
+
+TASK [sonarqube : Khởi động và cho phép SonarQube chạy ngầm lúc Boot] **********
+ok: [127.0.0.1]
+
+PLAY [Cấu hình Local DNS & Reverse Proxy] **************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [127.0.0.1]
+
+TASK [bind9 : Cài đặt gói Bind9 (named)] ***************************************
+ok: [127.0.0.1]
+
+TASK [bind9 : Cấu hình named.conf để lắng nghe IP nội bộ] **********************
+ok: [127.0.0.1] => (item={'regexp': 'listen-on port 53', 'line': '        listen-on port 53 { 127.0.0.1; any; };'})
+ok: [127.0.0.1] => (item={'regexp': 'allow-query', 'line': '        allow-query     { localhost; any; };'})
+
+TASK [bind9 : Thêm Zone abc vào named.conf] ************************************
+ok: [127.0.0.1]
+
+TASK [bind9 : Tạo file Zone từ Template Jinja2] ********************************
+ok: [127.0.0.1]
+
+TASK [bind9 : Mở port DNS trên Firewalld] **************************************
+ok: [127.0.0.1]
+
+TASK [bind9 : Khởi động dịch vụ DNS] *******************************************
+ok: [127.0.0.1]
+
+TASK [nginx : Cài đặt gói Nginx] ***********************************************
+ok: [127.0.0.1]
+
+TASK [nginx : Đổ Template cấu hình Reverse Proxy vào Nginx] ********************
+ok: [127.0.0.1]
+
+TASK [nginx : Cấu hình SELinux cho phép Nginx kết nối mạng nội bộ] *************
+ok: [127.0.0.1]
+
+TASK [nginx : Mở port 80 (HTTP) trên Firewalld] ********************************
+ok: [127.0.0.1]
+
+TASK [nginx : Khởi động và cho phép Nginx chạy lúc Boot] ***********************
+ok: [127.0.0.1]
+
+PLAY RECAP *********************************************************************
+10.0.0.5                   : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+127.0.0.1                  : ok=37   changed=0    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+
