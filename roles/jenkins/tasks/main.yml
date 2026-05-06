@@ -50,6 +50,9 @@
     owner: jenkins
     group: jenkins
     mode: '0644'
+  tags:
+    - jcasc
+    - advanced
 
 - name: Tắt màn hình Setup Wizard mặc định của Jenkins
   ansible.builtin.lineinfile:
@@ -57,6 +60,9 @@
     regexp: '^Environment="JAVA_OPTS'
     line: 'Environment="JAVA_OPTS=-Djava.awt.headless=true -Djenkins.install.runSetupWizard=false"'
   notify: Restart Jenkins
+  tags:
+    - jcasc
+    - advanced
 
 - name: Bơm biến môi trường JCasC vào Systemd của Jenkins
   ansible.builtin.lineinfile:
@@ -64,9 +70,15 @@
     insertafter: '^Environment="JAVA_OPTS'
     line: 'Environment="CASC_JENKINS_CONFIG=/var/lib/jenkins/jenkins.yaml"'
   notify: Restart Jenkins
+  tags:
+    - jcasc
+    - advanced
 
 - name: Chờ đợi Jenkins khởi động hoàn toàn (Cho đến khi mở port 8080)
   ansible.builtin.wait_for:
     port: 8080
     delay: 10
     timeout: 300
+  tags:
+    - jcasc
+    - advanced
