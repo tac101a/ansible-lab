@@ -12,11 +12,11 @@ credentials:
               username: "admin"
               password: "{{ nexus_password }}"
           - basicSSHUserPrivateKey:
-              id: "vm2-ssh-key"
-              description: "Chia khoa SSH vao VM2 Agent"
+              id: "rke-node-ssh-key" # Đã sửa
+              description: "SSH Key vao RKE Docker Node" # Đã sửa
               privateKeySource:
                 directEntry:
-                  privateKey: "{{ vm2_ssh_private_key }}"
+                  privateKey: "{{ rke_ssh_private_key }}" # Đã sửa (Nhớ update trong secrets.yml)
           - usernamePassword:
               id: "github-token-credentials"
               description: "Github Personal Access Token for Auto Tagging"
@@ -36,14 +36,14 @@ jenkins:
   numExecutors: 2
   nodes:
     - permanent:
-        name: "agent-vm2"
-        labelString: "docker-node"
+        name: "docker-agent-node" # Đã sửa
+        labelString: "docker-node" # Giữ nguyên nhãn này để Jenkinsfile cũ vẫn chạy được
         mode: EXCLUSIVE
         numExecutors: 2
         remoteFS: "/home/{{ ansible_user }}/jenkins-workspace"
         launcher:
           ssh:
-            credentialsId: "vm2-ssh-key"
+            credentialsId: "rke-node-ssh-key" # Đã sửa cho khớp với ID ở trên
             host: "{{ core_tools_ip }}"
             port: 22
             sshHostKeyVerificationStrategy: "nonVerifyingKeyVerificationStrategy"
