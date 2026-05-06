@@ -35,9 +35,9 @@
     state: started
     enabled: true
 
-- name: Thêm user azureuser vào group docker (Để chạy không cần sudo)
+- name: Them user hien tai vao group docker (Để chạy không cần sudo)
   ansible.builtin.user:
-    name: azureuser
+    name: "{{ ansible_user }}"
     groups: docker
     append: yes
 

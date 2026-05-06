@@ -6,3 +6,4 @@ dns_records:
   - { name: "nexus", ip: "{{ core_tools_ip }}" }
   - { name: "sonar", ip: "{{ core_tools_ip }}" }
   - { name: "docker", ip: "{{ core_tools_ip }}" }
+  - { name: "gitlab", ip: "{{ hostvars[groups['gitlab_server'][0]]['ansible_host'] }}" }

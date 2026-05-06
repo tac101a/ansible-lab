@@ -40,11 +40,11 @@ jenkins:
         labelString: "docker-node"
         mode: EXCLUSIVE
         numExecutors: 2
-        remoteFS: "/home/azureuser/jenkins-workspace"
+        remoteFS: "/home/{{ ansible_user }}/jenkins-workspace"
         launcher:
           ssh:
             credentialsId: "vm2-ssh-key"
-            host: "10.0.0.5"
+            host: "{{ core_tools_ip }}"
             port: 22
             sshHostKeyVerificationStrategy: "nonVerifyingKeyVerificationStrategy"
 
