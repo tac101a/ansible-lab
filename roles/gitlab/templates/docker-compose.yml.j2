@@ -1,0 +1,18 @@
+version: '3.6'
+services:
+  web:
+    image: 'gitlab/gitlab-ee:latest'
+    restart: always
+    hostname: '{{ gitlab_hostname }}'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://{{ gitlab_hostname }}:{{ gitlab_http_port }}'
+        gitlab_rails['gitlab_shell_ssh_port'] = {{ gitlab_ssh_port }}
+    ports:
+      - '{{ gitlab_http_port }}:80'
+      - '{{ gitlab_https_port }}:443'
+      - '{{ gitlab_ssh_port }}:22'
+    volumes:
+      - '{{ gitlab_install_dir }}/config:/etc/gitlab'
+      - '{{ gitlab_install_dir }}/logs:/var/log/gitlab'
+      - '{{ gitlab_install_dir }}/data:/var/opt/gitlab'

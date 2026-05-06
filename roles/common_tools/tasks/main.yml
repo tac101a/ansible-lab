@@ -21,6 +21,6 @@
 - name: Khai bao tam ban do Local DNS vao /etc/hosts
   ansible.builtin.lineinfile:
     path: /etc/hosts
-    line: "{{ core_ip }} jenkins.abc sonar.abc nexus.abc docker.abc"
+    line: "{{ core_tools_ip }} jenkins.abc sonar.abc nexus.abc docker.abc"
     state: present
     backup: yes

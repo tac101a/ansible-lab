@@ -1,8 +1,9 @@
-[control_node]
-127.0.0.1 ansible_connection=local
+[gitlab_server]
+IP_GITLAB_PENDING ansible_user=user_ssh
 
-[target_nodes]
-10.0.0.5 ansible_user=azureuser ansible_ssh_private_key_file=~/.ssh/id_ed25519
+[rke_tools_server]
+IP_RKE_PENDING ansible_user=user_ssh
 
 [all:vars]
-core_ip="10.0.0.4"
+ansible_ssh_private_key_file=~/.ssh/id_ed25519
+core_tools_ip="{{ hostvars[groups['rke_tools_server'][0]]['ansible_host'] }}"

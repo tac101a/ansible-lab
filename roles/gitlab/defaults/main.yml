@@ -1,0 +1,6 @@
+---
+gitlab_install_dir: /opt/gitlab
+gitlab_hostname: gitlab.abc
+gitlab_http_port: 8080
+gitlab_https_port: 4433
+gitlab_ssh_port: 2224
