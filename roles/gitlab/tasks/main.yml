@@ -11,7 +11,7 @@
     state: directory
     owner: root
     group: root
-    mode: '0755'
+    mode: "0755"
   loop:
     - "{{ gitlab_install_dir }}/config"
     - "{{ gitlab_install_dir }}/data"
@@ -23,8 +23,19 @@
     dest: "{{ gitlab_install_dir }}/docker-compose.yml"
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
   register: compose_template
+
+- name: Open ports for GitLab communication on Firewalld
+  ansible.posix.firewalld:
+    port: "{{ item }}"
+    state: enabled
+    permanent: true
+    immediate: true
+  loop:
+    - "{{ gitlab_http_port }}/tcp"
+    - "{{ gitlab_https_port }}/tcp"
+    - "{{ gitlab_ssh_port }}/tcp"
 
 - name: Start GitLab via Docker Compose
   ansible.builtin.command:
