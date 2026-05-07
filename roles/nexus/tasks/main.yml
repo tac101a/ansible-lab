@@ -1,7 +1,7 @@
 ---
 - name: Cài đặt công cụ giải nén (tar, wget)
   ansible.builtin.dnf:
-    name: 
+    name:
       - tar
       - wget
     state: present
@@ -12,12 +12,20 @@
     state: present
     create_home: no
 
-- name: Tải và giải nén mã nguồn Nexus thẳng vào /opt
+- name: Tải mã nguồn Nexus về /tmp (Vượt rào Sonatype)
+  ansible.builtin.get_url:
+    url: "https://download.sonatype.com/nexus/3/nexus-{{ nexus_version }}-linux-x86_64.tar.gz"
+    dest: "/tmp/nexus.tar.gz"
+    headers:
+      User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    timeout: 120
+
+- name: Giải nén mã nguồn Nexus thẳng vào /opt
   ansible.builtin.unarchive:
-    src: "https://download.sonatype.com/nexus/3/nexus-{{ nexus_version }}-unix.tar.gz"
+    src: "/tmp/nexus.tar.gz"
     dest: "/opt"
     remote_src: yes
-    creates: "/opt/sonatype-work" # Giúp lệnh này Idempotent (chỉ tải 1 lần)
+    creates: "/opt/sonatype-work" # Giúp lệnh này Idempotent
 
 - name: Đổi tên thư mục phiên bản thành thư mục chuẩn (/opt/nexus)
   ansible.builtin.command: mv /opt/nexus-{{ nexus_version }} {{ nexus_dir }}
@@ -38,7 +46,7 @@
 - name: Cấu hình Port cho Nexus
   ansible.builtin.lineinfile:
     path: "{{ nexus_dir }}/etc/nexus-default.properties"
-    regexp: '^application-port='
+    regexp: "^application-port="
     line: "application-port={{ nexus_port }}"
 
 - name: Tạo file khởi động Systemd cho Nexus
@@ -68,20 +76,20 @@
     permanent: true
     immediate: true
 
-- name: Khởi động và cho phép Nexus chạy ngầm lúc Boot
-  ansible.builtin.systemd:
-    name: nexus
-    daemon_reload: yes
-    state: started
-    enabled: true
-
 - name: Mo khoa gioi han File Descriptors cho Nexus
   ansible.builtin.copy:
     dest: /etc/security/limits.d/99-nexus.conf
     content: |
       * soft nofile 65536
       * hard nofile 65536
-    mode: '0644'
+    mode: "0644"
+
+- name: Khởi động và cho phép Nexus chạy ngầm lúc Boot
+  ansible.builtin.systemd:
+    name: nexus
+    daemon_reload: yes
+    state: started
+    enabled: true
 
 - name: Restart Nexus de nhan han muc moi
   ansible.builtin.systemd:

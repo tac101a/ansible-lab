@@ -1,8 +1,8 @@
 [gitlab_server]
-IP_GITLAB_PENDING ansible_user=user_ssh
+gitlab_node ansible_host=10.89.25.99 ansible_user=user_ssh
 
 [rke_tools_server]
-10.89.25.146 ansible_user=quanbtl
+rke_node ansible_host=10.89.25.146 ansible_user=quanbtl
 
 [all:vars]
 ansible_ssh_private_key_file=~/.ssh/id_ed25519
