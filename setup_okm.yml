@@ -1,0 +1,6 @@
+---
+- name: Provision OKD Manager Node
+  hosts: okd_manager
+  become: true
+  roles:
+    - dnsmasq

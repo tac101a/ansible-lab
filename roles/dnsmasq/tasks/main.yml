@@ -1,0 +1,79 @@
+---
+- name: Cài đặt gói Dnsmasq
+  ansible.builtin.dnf:
+    name: dnsmasq
+    state: present
+
+- name: Cấu hình DNS records và SRV records cho OKD4 (Drop-in file)
+  ansible.builtin.blockinfile:
+    path: /etc/dnsmasq.d/okd4.conf
+    create: true
+    marker: "# {mark} OKD4 DNSMASQ CONFIG BY ANSIBLE"
+    block: |
+      domain={{ okd_domain }}
+      local=/{{ okd_domain }}/
+      expand-hosts
+      listen-address=127.0.0.1,{{ okd_manager_ip }}
+      bind-interfaces
+      address=/apps.{{ okd_domain }}/{{ okd_apps_vip }}
+      host-record=api.{{ okd_domain }},{{ okd_api_vip }}
+      host-record=api-int.{{ okd_domain }},{{ okd_api_vip }}
+      host-record=bootstrap.{{ okd_domain }},{{ okd_bootstrap_ip }}
+      {% for node in okd_masters %}
+      host-record={{ node.name }}.{{ okd_domain }},{{ node.ip }}
+      host-record={{ node.etcd }}.{{ okd_domain }},{{ node.ip }}
+      srv-host=_etcd-server-ssl._tcp.{{ okd_domain }},{{ node.etcd }}.{{ okd_domain }},2380,0,10
+      {% endfor %}
+      {% for dns in okd_fallback_dns %}
+      server={{ dns }}
+      {% endfor %}
+  notify: Restart Dnsmasq
+
+- name: Mở port DNS trên Firewalld
+  ansible.posix.firewalld:
+    service: dns
+    state: enabled
+    permanent: true
+    immediate: true
+
+- name: Khởi động và cho phép Dnsmasq chạy ngầm
+  ansible.builtin.systemd:
+    name: dnsmasq
+    state: started
+    enabled: true
+
+- name: Get active NetworkManager connection
+  ansible.builtin.command: nmcli -t -f NAME connection show --active
+  register: nmcli_active
+  changed_when: false
+
+- name: Read current DNS settings
+  ansible.builtin.command: nmcli -t -f ipv4.dns,ipv4.dns-search connection show "{{ nmcli_active.stdout_lines[0] }}"
+  register: nmcli_settings
+  changed_when: false
+  when: nmcli_active.stdout_lines | length > 0
+
+- name: Normalize current and desired DNS settings
+  ansible.builtin.set_fact:
+    desired_dns: "{{ [okd_manager_ip] + okd_fallback_dns }}"
+    desired_dns_search: ["{{ okd_domain }}"]
+    current_dns: "{{ (nmcli_settings.stdout | regex_search('ipv4.dns:([^\\n]+)', '\\1') | default('')) | split(',') | reject('equalto','') | list }}"
+    current_dns_search: "{{ (nmcli_settings.stdout | regex_search('ipv4.dns-search:([^\\n]+)', '\\1') | default('')) | split(',') | reject('equalto','') | list }}"
+  when: nmcli_active.stdout_lines | length > 0
+
+- name: Update DNS settings when needed
+  ansible.builtin.command: >
+    nmcli connection modify "{{ nmcli_active.stdout_lines[0] }}"
+    ipv4.dns "{{ desired_dns | join(' ') }}"
+    ipv4.dns-search "{{ desired_dns_search | join(' ') }}"
+  register: nmcli_update
+  changed_when: true
+  when: >
+    nmcli_active.stdout_lines | length > 0 and (
+      desired_dns | sort != current_dns | sort or
+      desired_dns_search | sort != current_dns_search | sort
+    )
+
+- name: Reapply connection if DNS updated
+  ansible.builtin.command: nmcli connection up "{{ nmcli_active.stdout_lines[0] }}"
+  when: nmcli_update is changed
