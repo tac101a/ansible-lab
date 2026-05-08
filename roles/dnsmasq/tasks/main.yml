@@ -47,33 +47,31 @@
   register: nmcli_active
   changed_when: false
 
-- name: Read current DNS settings
-  ansible.builtin.command: nmcli -t -f ipv4.dns,ipv4.dns-search connection show "{{ nmcli_active.stdout_lines[0] }}"
-  register: nmcli_settings
+- name: Lấy tên Card mạng đang Active (Bỏ qua loopback/docker)
+  ansible.builtin.shell: nmcli -t -f NAME,TYPE connection show --active | grep -v 'loopback\|bridge\|tun' | head -n 1 | cut -d':' -f1
+  register: nmcli_active
   changed_when: false
-  when: nmcli_active.stdout_lines | length > 0
 
-- name: Normalize current and desired DNS settings
-  ansible.builtin.set_fact:
-    desired_dns: "{{ [okd_manager_ip] + okd_fallback_dns }}"
-    desired_dns_search: ["{{ okd_domain }}"]
-    current_dns: "{{ (nmcli_settings.stdout | regex_search('ipv4.dns:([^\\n]+)', '\\1') | default('')) | split(',') | reject('equalto','') | list }}"
-    current_dns_search: "{{ (nmcli_settings.stdout | regex_search('ipv4.dns-search:([^\\n]+)', '\\1') | default('')) | split(',') | reject('equalto','') | list }}"
-  when: nmcli_active.stdout_lines | length > 0
+- name: Cập nhật DNS cho NetworkManager (Idempotent Native Shell)
+  ansible.builtin.shell: |
+    CONN_NAME="{{ nmcli_active.stdout }}"
+    DESIRED_DNS="{{ ([okd_manager_ip] + okd_fallback_dns) | join(' ') }}"
+    DESIRED_SEARCH="{{ okd_domain }}"
 
-- name: Update DNS settings when needed
-  ansible.builtin.command: >
-    nmcli connection modify "{{ nmcli_active.stdout_lines[0] }}"
-    ipv4.dns "{{ desired_dns | join(' ') }}"
-    ipv4.dns-search "{{ desired_dns_search | join(' ') }}"
+    # Dùng nmcli và cut để bóc tách IP hiện tại cực kỳ an toàn
+    CURRENT_DNS=$(nmcli -t -f ipv4.dns connection show "$CONN_NAME" | cut -d':' -f2 | tr ',' ' ')
+    CURRENT_SEARCH=$(nmcli -t -f ipv4.dns-search connection show "$CONN_NAME" | cut -d':' -f2 | tr ',' ' ')
+
+    # Hàm normalize để so sánh không phân biệt thứ tự IP
+    normalize() { echo "$1" | xargs -n1 2>/dev/null | sort | xargs; }
+
+    if [ "$(normalize "$CURRENT_DNS")" != "$(normalize "$DESIRED_DNS")" ] || [ "$(normalize "$CURRENT_SEARCH")" != "$(normalize "$DESIRED_SEARCH")" ]; then
+        nmcli connection modify "$CONN_NAME" ipv4.dns "$DESIRED_DNS" ipv4.dns-search "$DESIRED_SEARCH"
+        nmcli connection up "$CONN_NAME"
+        echo "CHANGED"
+    else
+        echo "OK"
+    fi
   register: nmcli_update
-  changed_when: true
-  when: >
-    nmcli_active.stdout_lines | length > 0 and (
-      desired_dns | sort != current_dns | sort or
-      desired_dns_search | sort != current_dns_search | sort
-    )
-
-- name: Reapply connection if DNS updated
-  ansible.builtin.command: nmcli connection up "{{ nmcli_active.stdout_lines[0] }}"
-  when: nmcli_update is changed
+  changed_when: "'CHANGED' in nmcli_update.stdout"
+  when: nmcli_active.stdout | length > 0
