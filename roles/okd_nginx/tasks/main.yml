@@ -1,0 +1,123 @@
+---
+- name: Cài đặt gói Nginx, Stream Module và công cụ quản lý SELinux
+  ansible.builtin.dnf:
+    name:
+      - nginx
+      - nginx-mod-stream
+      - policycoreutils-python-utils
+    state: present
+
+- name: Move default HTTP listener to 8080 (IPv4)
+  ansible.builtin.replace:
+    path: /etc/nginx/nginx.conf
+    regexp: '^(\s*listen\s+)80(\s+[^;]+)?;'
+    replace: '\1 8080\2;'
+  notify: Restart Nginx
+
+- name: Move default HTTP listener to 8080 (IPv6)
+  ansible.builtin.replace:
+    path: /etc/nginx/nginx.conf
+    regexp: '^(\s*listen\s+)\[::\]:80(\s+[^;]+)?;'
+    replace: '\1[::]:8080\2;'
+  notify: Restart Nginx
+
+- name: Tạo thư mục chứa cấu hình Stream cho Decoupling
+  ansible.builtin.file:
+    path: /etc/nginx/stream.d
+    state: directory
+    mode: "0755"
+
+- name: Ensure stream include is at root context
+  ansible.builtin.blockinfile:
+    path: /etc/nginx/nginx.conf
+    marker: "# {mark} OKD4 STREAM INCLUDE BY ANSIBLE"
+    insertbefore: '^http\s*\{'
+    block: |
+      stream {
+          include /etc/nginx/stream.d/*.conf;
+      }
+  notify: Restart Nginx
+
+- name: Configure OKD4 stream upstreams
+  ansible.builtin.blockinfile:
+    path: /etc/nginx/stream.d/okd4.conf
+    create: true
+    marker: "# {mark} OKD4 STREAM CONFIG BY ANSIBLE"
+    block: |
+      upstream k8s-api {
+          server {{ okd_bootstrap_ip }}:6443;
+          {% for node in okd_masters %}
+          server {{ node.ip }}:6443;
+          {% endfor %}
+      }
+      upstream machine-config {
+          server {{ okd_bootstrap_ip }}:22623;
+          {% for node in okd_masters %}
+          server {{ node.ip }}:22623;
+          {% endfor %}
+      }
+      upstream ingress-http {
+          {% for node in okd_masters %}
+          server {{ node.ip }}:80;
+          {% endfor %}
+      }
+      upstream ingress-https {
+          {% for node in okd_masters %}
+          server {{ node.ip }}:443;
+          {% endfor %}
+      }
+      upstream ingress-health {
+          {% for node in okd_masters %}
+          server {{ node.ip }}:1936;
+          {% endfor %}
+      }
+
+      server { listen 6443; proxy_pass k8s-api; }
+      server { listen 22623; proxy_pass machine-config; }
+      server { listen 80; proxy_pass ingress-http; }
+      server { listen 443; proxy_pass ingress-https; }
+      server { listen 1936; proxy_pass ingress-health; }
+  notify: Restart Nginx
+
+- name: Mở khóa các cờ SELinux nội bộ cho Nginx
+  ansible.posix.seboolean:
+    name: "{{ item }}"
+    state: yes
+    persistent: yes
+  loop:
+    - httpd_can_network_connect
+    - httpd_graceful_shutdown
+    - httpd_can_network_relay
+    - nis_enabled
+
+- name: Allow required TCP ports in SELinux
+  ansible.posix.seport:
+    ports: "{{ item }}"
+    proto: tcp
+    setype: http_port_t
+    state: present
+  loop:
+    - 6443
+    - 22623
+    - 1936
+    - 8080
+
+- name: Mở Port giao tiếp trên Firewalld
+  ansible.posix.firewalld:
+    port: "{{ item }}"
+    state: enabled
+    permanent: true
+    immediate: true
+  loop:
+    - 6443/tcp
+    - 22623/tcp
+    - 1936/tcp
+    - 80/tcp
+    - 443/tcp
+    - 8080/tcp
+
+- name: Khởi động và cho phép Nginx Stream chạy ngầm
+  ansible.builtin.systemd:
+    name: nginx
+    state: started
+    enabled: true
