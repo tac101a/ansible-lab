@@ -3,10 +3,10 @@ okd_domain: "okd4.srv.world"
 okd_manager_ip: "10.89.25.146"
 okd_api_vip: "{{ okd_manager_ip }}"
 okd_apps_vip: "{{ okd_manager_ip }}"
-okd_bootstrap_ip: "10.0.0.24"
+okd_bootstrap_ip: "10.89.25.160"
 okd_fallback_dns:
   - "8.8.8.8"
 okd_masters:
-  - { name: "master-0", ip: "10.0.0.40", etcd: "etcd-0" }
-  - { name: "master-1", ip: "10.0.0.41", etcd: "etcd-1" }
-  - { name: "master-2", ip: "10.0.0.42", etcd: "etcd-2" }
+  - { name: "master-0", ip: "10.89.25.161", etcd: "etcd-0" }
+  - { name: "master-1", ip: "10.89.25.132", etcd: "etcd-1" }
+  - { name: "master-2", ip: "10.89.25.163", etcd: "etcd-2" }
