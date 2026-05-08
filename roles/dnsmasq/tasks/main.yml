@@ -24,6 +24,9 @@
       host-record={{ node.etcd }}.{{ okd_domain }},{{ node.ip }}
       srv-host=_etcd-server-ssl._tcp.{{ okd_domain }},{{ node.etcd }}.{{ okd_domain }},2380,0,10
       {% endfor %}
+      {% for node in okd_workers %}
+      host-record={{ node.name }}.{{ okd_domain }},{{ node.ip }}
+      {% endfor %}
       {% for dns in okd_fallback_dns %}
       server={{ dns }}
       {% endfor %}

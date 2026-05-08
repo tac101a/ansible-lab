@@ -7,18 +7,18 @@
       - policycoreutils-python-utils
     state: present
 
-- name: Move default HTTP listener to 8080 (IPv4)
+- name: Move default HTTP listener to 8089 (IPv4)
   ansible.builtin.replace:
     path: /etc/nginx/nginx.conf
     regexp: '^(\s*listen\s+)80(\s+[^;]+)?;'
-    replace: '\1 8080\2;'
+    replace: '\1 8089\2;'
   notify: Restart Nginx
 
-- name: Move default HTTP listener to 8080 (IPv6)
+- name: Move default HTTP listener to 8089 (IPv6)
   ansible.builtin.replace:
     path: /etc/nginx/nginx.conf
     regexp: '^(\s*listen\s+)\[::\]:80(\s+[^;]+)?;'
-    replace: '\1[::]:8080\2;'
+    replace: '\1[::]:8089\2;'
   notify: Restart Nginx
 
 - name: Tạo thư mục chứa cấu hình Stream cho Decoupling
@@ -91,7 +91,7 @@
     - nis_enabled
 
 - name: Allow required TCP ports in SELinux
-  ansible.posix.seport:
+  community.general.seport:
     ports: "{{ item }}"
     proto: tcp
     setype: http_port_t
@@ -100,7 +100,7 @@
     - 6443
     - 22623
     - 1936
-    - 8080
+    - 8089
 
 - name: Mở Port giao tiếp trên Firewalld
   ansible.posix.firewalld:
@@ -114,7 +114,7 @@
     - 1936/tcp
     - 80/tcp
     - 443/tcp
-    - 8080/tcp
+    - 8089/tcp
 
 - name: Khởi động và cho phép Nginx Stream chạy ngầm
   ansible.builtin.systemd:
