@@ -24,3 +24,10 @@
     line: "{{ core_tools_ip }} jenkins.abc sonar.abc nexus.abc docker.abc"
     state: present
     backup: yes
+
+- name: Inject Local DNS for CRC API resolution (Helper Task)
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    line: "127.0.0.1 api.crc.testing"
+    state: present
+    backup: yes

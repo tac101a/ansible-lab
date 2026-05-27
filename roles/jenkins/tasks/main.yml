@@ -22,6 +22,31 @@
     permanent: true
     immediate: true
 
+- name: Create Systemd service for CRC SSH Tunnel (Decoupled Service)
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/crc-tunnel.service
+    content: |
+      [Unit]
+      Description=Persistent SSH Tunnel to CRC 152
+      After=network.target
+
+      [Service]
+      User=root
+      ExecStart=/usr/bin/ssh -N -T -L 6443:127.0.0.1:6443 -L 80:127.0.0.1:80 cpp00214145s@10.89.25.152 -o StrictHostKeyChecking=no
+      Restart=always
+      RestartSec=10
+
+      [Install]
+      WantedBy=multi-user.target
+    mode: '0644'
+
+- name: Enable and start CRC SSH Tunnel service
+  ansible.builtin.systemd:
+    name: crc-tunnel
+    daemon_reload: yes
+    state: started
+    enabled: true
+
 - name: Khởi động và cho phép Jenkins chạy ngầm lúc Boot
   ansible.builtin.systemd:
     name: jenkins

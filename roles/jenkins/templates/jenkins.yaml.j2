@@ -23,6 +23,10 @@ credentials:
               username: "tac101a"
               password: "{{ github_token }}"
           - string:
+              id: "openshift-crc-token"
+              description: "Persistent Service Account Token for OpenShift CRC"
+              secret: "{{ openshift_token }}"
+          - string:
               id: "slack-webhook-url"
               description: "Slack Webhook for Jenkins Alerts"
               secret: "{{ slack_webhook_url }}"
